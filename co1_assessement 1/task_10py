@@ -1,0 +1,65 @@
+from decimal import Decimal
+import time
+PAYMENT = "33.40"
+ADJUSTMENT = "0.10"
+SIZES = [300, 6000, 150000]
+def total_float(payments):
+    """Calculate total using floating-point arithmetic."""
+    total = 0.0
+    for amount in payments:
+        total += float(amount)
+    return total
+def total_decimal(payments):
+    """Calculate exact decimal total from string amounts."""
+    total = Decimal("0.00")
+    for amount in payments:
+        total += Decimal(amount)
+    return total
+def measure(function, payments):
+    """Return the result and elapsed time."""
+    start = time.perf_counter()
+    result = function(payments)
+    elapsed = time.perf_counter() - start
+    return result, elapsed
+print("FLOAT vs DECIMAL TOTALS")
+print("-" * 75)
+for n in SIZES:
+    payments = [PAYMENT] * n + [ADJUSTMENT] * 3
+    float_total, float_time = measure(total_float, payments)
+    decimal_total, decimal_time = measure(total_decimal, payments)
+    difference = Decimal(str(float_total)) - decimal_total
+    print(f"\nNumber of Rs.33.40 payments: {n}")
+    print(f"Float total:   {float_total:.10f}")
+    print(f"Decimal total: {decimal_total:.2f}")
+    print(f"Difference:    {difference}")
+    print(f"Float time:    {float_time:.6f} seconds")
+    print(f"Decimal time:  {decimal_time:.6f} seconds")
+# Compare rounding strategies
+print("\nROUNDING COMPARISON")
+amounts = [Decimal("10.005"), Decimal("10.005"), Decimal("10.005")]
+round_each = sum(
+    (amount.quantize(Decimal("0.01")) for amount in amounts),
+    Decimal("0.00")
+)
+round_total = sum(amounts, Decimal("0.00")).quantize(
+    Decimal("0.01")
+)
+print("Round each payment:", round_each)
+print("Round only total:  ", round_total)
+# Rate-table lookup versus recalculation
+print("\nRATE TABLE COMPARISON")
+RATE_CARD = {
+    (35, 85): Decimal("30.00"),
+    (42, 87): Decimal("33.40"),
+    (31, 83): Decimal("27.80")
+}
+start = time.perf_counter()
+for _ in range(100000):
+    rate = RATE_CARD[(42, 87)]
+lookup_time = time.perf_counter() - start
+start = time.perf_counter()
+for _ in range(100000):
+    rate = Decimal("30.00") + Decimal("12") * Decimal("0.40")
+recalculation_time = time.perf_counter() - start
+print(f"100,000 table lookups: {lookup_time:.6f} seconds")
+print(f"100,000 recalculations: {recalculation_time:.6f} seconds")
